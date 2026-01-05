@@ -8,9 +8,11 @@ import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
-    // Environment variables
+    // Environment variables with validation
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
+      expandVariables: true,
     }),
     // Prisma database
     PrismaModule,

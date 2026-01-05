@@ -1,9 +1,7 @@
-import { Controller, Get, Put, Body, UsePipes } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Put, Body, ValidationPipe } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { MitigationService } from './mitigation.service';
 import { UpdateMitigationConfigDto } from './dto/mitigation.dto';
-import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import { UpdateMitigationConfigSchema, UpdateMitigationConfigInput } from '../common/schemas/validation.schemas';
 
 @ApiTags('mitigation')
 @Controller('mitigation')
@@ -20,8 +18,9 @@ export class MitigationController {
   @Put('config')
   @ApiOperation({ summary: 'Update mitigation configuration' })
   @ApiResponse({ status: 200, description: 'Configuration updated' })
-  @UsePipes(new ZodValidationPipe(UpdateMitigationConfigSchema))
-  updateConfig(@Body() dto: UpdateMitigationConfigInput) {
+  @ApiBody({ type: UpdateMitigationConfigDto })
+  updateConfig(@Body(ValidationPipe) dto: UpdateMitigationConfigDto) {
+    console.log('📥 [CONTROLLER] Received mitigation config update:', dto);
     return this.mitigationService.updateConfig(dto);
   }
 

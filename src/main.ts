@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, BadRequestException } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
@@ -18,32 +18,54 @@ async function bootstrap() {
       process.env.FRONTEND_URL ?? 'http://localhost:5173',
     ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // Global validation pipe
+  // Global validation pipe with detailed error messages
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: true,
       transformOptions: {
         enableImplicitConversion: true,
+      },
+      errorHttpStatusCode: 400,
+      exceptionFactory: (errors) => {
+        const messages = errors.map((error) => ({
+          field: error.property,
+          value: error.value,
+          errors: Object.values(error.constraints || {}),
+        }));
+        
+        logger.error('❌ Validation failed:', JSON.stringify(messages, null, 2));
+        
+        return new BadRequestException({
+          statusCode: 400,
+          message: 'Validation failed',
+          errors: messages,
+        });
       },
     }),
   );
 
-  // HTTP request logging
+  // HTTP request logging with body
   app.use((req, res, next) => {
     const start = Date.now();
     const requestId = Math.random().toString(36).substr(2, 9);
     
-    // Log request start
+    // Log request with body details
+    const bodyPreview = req.body ? JSON.stringify(req.body, null, 2) : 'N/A';
+    
     logger.log(`
 ┌─────────────────────────────────────────────────────
 │ 🔵 [${requestId}] Incoming Request
 │ Method: ${req.method}
 │ URL: ${req.url}
-│ Body: ${req.method !== 'GET' ? JSON.stringify(req.body) : 'N/A'}
+│ Content-Type: ${req.headers['content-type'] || 'N/A'}
+│ Body:
+${bodyPreview}
 │ IP: ${req.ip}
 └─────────────────────────────────────────────────────`);
     
@@ -97,13 +119,15 @@ async function bootstrap() {
   │   DB:      PostgreSQL with Prisma ORM                   │
   │                                                         │
   │   📡 WebSocket enabled for real-time updates            │
-  │   📝 HTTP Request logging active                        │
+  │   📝 HTTP Request logging with body details             │
+  │   ✅ Validation enabled with class-validator            │
   │                                                         │
   └─────────────────────────────────────────────────────────┘
   `);
 
-  logger.log(`Application running on: http://localhost:${port}`);
-  logger.log(`Swagger docs: http://localhost:${port}/api/docs`);
+  logger.log(`🚀 Application running on: http://localhost:${port}`);
+  logger.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
+  logger.log(`✅ Ready to accept requests!`);
 }
 
 bootstrap();

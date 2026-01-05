@@ -1,9 +1,7 @@
-import { Controller, Get, Post, Body, Param, UsePipes } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Param, UsePipes, ValidationPipe } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { SimulationService } from './simulation.service';
 import { StartSimulationDto } from './dto/simulation.dto';
-import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import { StartSimulationSchema, StartSimulationInput } from '../common/schemas/validation.schemas';
 
 @ApiTags('simulation')
 @Controller('simulation')
@@ -13,9 +11,21 @@ export class SimulationController {
   @Post('start')
   @ApiOperation({ summary: 'Start a new attack simulation' })
   @ApiResponse({ status: 201, description: 'Simulation started successfully' })
-  @UsePipes(new ZodValidationPipe(StartSimulationSchema))
-  startSimulation(@Body() dto: StartSimulationInput) {
-    return this.simulationService.startSimulation(dto);
+  @ApiResponse({ status: 400, description: 'Invalid request body' })
+  @ApiBody({ type: StartSimulationDto })
+  startSimulation(@Body(ValidationPipe) dto: StartSimulationDto) {
+    console.log('📥 [CONTROLLER] Received simulation request:', dto);
+    
+    // Transform DTO to match service expectations
+    const config = {
+      type: dto.type,
+      targetDomain: dto.targetDomain,
+      spoofedIP: dto.spoofedIP,
+      intensity: dto.intensity,
+      duration: dto.duration,
+    };
+    
+    return this.simulationService.startSimulation(config);
   }
 
   @Post(':id/stop')
