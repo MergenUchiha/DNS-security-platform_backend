@@ -1,12 +1,29 @@
 import { Controller, Get, Post, Delete, Body, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
 import { DnsMonitorService } from './dns-monitor.service';
 
+// DTO для валидации
 class StartMonitoringDto {
+  @ApiProperty({ 
+    required: false, 
+    type: [String],
+    example: ['google.com', 'cloudflare.com'],
+    description: 'List of domains to monitor'
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   domains?: string[];
 }
 
 class AddDomainDto {
+  @ApiProperty({ 
+    example: 'github.com',
+    description: 'Domain name to add to monitoring'
+  })
+  @IsString()
   domain: string;
 }
 
@@ -18,6 +35,7 @@ export class DnsMonitorController {
   @Post('start')
   @ApiOperation({ summary: 'Start DNS traffic monitoring' })
   @ApiResponse({ status: 200, description: 'Monitoring started' })
+  @ApiResponse({ status: 400, description: 'Invalid request body' })
   async startMonitoring(@Body() dto: StartMonitoringDto) {
     await this.dnsMonitorService.startMonitoring(dto.domains || []);
     return {
@@ -54,6 +72,7 @@ export class DnsMonitorController {
   @Post('domain')
   @ApiOperation({ summary: 'Add domain to monitoring' })
   @ApiResponse({ status: 200, description: 'Domain added' })
+  @ApiResponse({ status: 400, description: 'Invalid domain name' })
   addDomain(@Body() dto: AddDomainDto) {
     this.dnsMonitorService.addDomain(dto.domain);
     return {
