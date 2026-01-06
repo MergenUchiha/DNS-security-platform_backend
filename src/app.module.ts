@@ -5,6 +5,7 @@ import { SimulationModule } from './simulation/simulation.module';
 import { MitigationModule } from './mitigation/mitigation.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { EventsModule } from './events/events.module';
+import { DnsMonitorModule } from './dns-monitor/dns-monitor.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { EventsModule } from './events/events.module';
     MitigationModule,
     AnalyticsModule,
     EventsModule,
+    DnsMonitorModule,
   ],
 })
 export class AppModule {}
