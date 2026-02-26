@@ -1,0 +1,14 @@
+$ORIGIN lab.
+$TTL 60
+@   IN SOA ns.lab. admin.lab. (
+      2026022601 ; serial
+      3600
+      600
+      604800
+      60
+)
+    IN NS ns.lab.
+
+ns      IN A  172.20.0.2
+bank    IN A  172.20.0.12
+shop    IN A  172.20.0.12

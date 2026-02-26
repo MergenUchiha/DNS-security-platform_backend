@@ -1,28 +1,15 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
-import { SimulationModule } from './simulation/simulation.module';
-import { MitigationModule } from './mitigation/mitigation.module';
-import { AnalyticsModule } from './analytics/analytics.module';
 import { EventsModule } from './events/events.module';
-import { DnsMonitorModule } from './dns-monitor/dns-monitor.module';
+import { SessionsModule } from './sessions/sessions.module';
+import { LabModule } from './lab/lab.module';
+import { MitigationModule } from './mitigation/mitigation.module';
+import { DnsModule } from './dns/dns.module';
+import { ReportModule } from './report/report.module';
+import { HealthModule } from './health/health.module';
+import { DemoModule } from './demo/demo.module';
 
 @Module({
-  imports: [
-    // Environment variables with validation
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-      expandVariables: true,
-    }),
-    // Prisma database
-    PrismaModule,
-    // Feature modules
-    SimulationModule,
-    MitigationModule,
-    AnalyticsModule,
-    EventsModule,
-    DnsMonitorModule,
-  ],
+  imports: [PrismaModule, EventsModule, SessionsModule, LabModule, MitigationModule, DnsModule, ReportModule, HealthModule, DemoModule],  
 })
 export class AppModule {}

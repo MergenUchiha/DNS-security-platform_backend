@@ -1,33 +1,20 @@
-import { Controller, Get, Put, Body, ValidationPipe } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Put } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { MitigationService } from './mitigation.service';
-import { UpdateMitigationConfigDto } from './dto/mitigation.dto';
+import { UpsertPolicyDto } from './dto/upsert-policy.dto';
 
 @ApiTags('mitigation')
 @Controller('mitigation')
 export class MitigationController {
-  constructor(private readonly mitigationService: MitigationService) {}
+  constructor(private readonly mitigation: MitigationService) {}
 
-  @Get('config')
-  @ApiOperation({ summary: 'Get current mitigation configuration' })
-  @ApiResponse({ status: 200, description: 'Configuration retrieved' })
-  getConfig() {
-    return this.mitigationService.getConfig();
+  @Get(':sessionId/policies')
+  list(@Param('sessionId') sessionId: string) {
+    return this.mitigation.list(sessionId);
   }
 
-  @Put('config')
-  @ApiOperation({ summary: 'Update mitigation configuration' })
-  @ApiResponse({ status: 200, description: 'Configuration updated' })
-  @ApiBody({ type: UpdateMitigationConfigDto })
-  updateConfig(@Body(ValidationPipe) dto: UpdateMitigationConfigDto) {
-    console.log('📥 [CONTROLLER] Received mitigation config update:', dto);
-    return this.mitigationService.updateConfig(dto);
-  }
-
-  @Get('metrics')
-  @ApiOperation({ summary: 'Get current security metrics' })
-  @ApiResponse({ status: 200, description: 'Metrics retrieved' })
-  getMetrics() {
-    return this.mitigationService.getMetrics();
+  @Put(':sessionId/policies')
+  upsert(@Param('sessionId') sessionId: string, @Body() dto: UpsertPolicyDto) {
+    return this.mitigation.upsert(sessionId, dto);
   }
 }

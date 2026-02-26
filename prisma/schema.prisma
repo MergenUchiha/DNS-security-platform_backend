@@ -1,7 +1,7 @@
-// DNS Security Platform - Prisma Schema
-
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
+
 }
 
 datasource db {
@@ -9,170 +9,85 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Attack Types Enum
-enum AttackType {
-  dns_cache_poisoning
-  man_in_the_middle
-  local_dns_hijack
-  rogue_dns_server
+enum LabMode {
+  SAFE
+  ATTACK
+  MITIGATED
 }
 
-// Attack Intensity Enum
-enum AttackIntensity {
-  low
-  medium
-  high
+enum EventType {
+  SESSION_STARTED
+  SESSION_ENDED
+
+  DNS_QUERY
+  DNS_RESPONSE
+
+  MODE_CHANGED
+  LAB_RESET
+
+  MITIGATION_POLICY_UPSERTED
+  MITIGATION_ENABLED
+  MITIGATION_DISABLED
+
+  SPOOF_DETECTED
+  SPOOF_BLOCKED
+  SAFE_RESOLUTION_FORCED
+
+  ERROR
 }
 
-// Simulation Status Enum
-enum SimulationStatus {
-  running
-  completed
-  stopped
-  failed
+model LabSession {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  endedAt   DateTime?
+  mode      LabMode  @default(SAFE)
+
+  events   Event[]
+  policies MitigationPolicy[]
+  queries  DnsQuery[]
 }
 
-// Query Status Enum
-enum QueryStatus {
-  pending
-  resolved
-  spoofed
-  blocked
+model Event {
+  id        String    @id @default(cuid())
+  ts        DateTime  @default(now())
+  type      EventType
+  severity  String    @default("INFO") // INFO/WARN/ALERT
+  payload   Json?
+
+  sessionId String
+  session   LabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, ts])
+  @@index([type, ts])
 }
 
-// Simulation Model
-model Simulation {
-  id              String            @id @default(uuid())
-  attackType      AttackType
-  targetDomain    String
-  spoofedIP       String
-  intensity       AttackIntensity
-  duration        Int               // seconds
-  status          SimulationStatus  @default(running)
-  startTime       DateTime          @default(now())
-  endTime         DateTime?
-  
-  // Metrics
-  totalQueries    Int               @default(0)
-  spoofedQueries  Int               @default(0)
-  blockedQueries  Int               @default(0)
-  successRate     Float             @default(0)
-  
-  // Relations
-  queries         DNSQuery[]
-  events          TimelineEvent[]
-  
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+model MitigationPolicy {
+  id         String   @id @default(cuid())
+  domain     String
+  action     String   // BLOCK | FORCE_SAFE_IP
+  allowedIps String[]
 
-  @@index([status])
-  @@index([startTime])
-  @@map("simulations")
+  sessionId String
+  session   LabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, domain])
 }
 
-// DNS Query Model
-model DNSQuery {
-  id            String      @id @default(uuid())
-  simulationId  String?
-  simulation    Simulation? @relation(fields: [simulationId], references: [id], onDelete: Cascade)
-  
-  domain        String
-  queryType     String      @default("A") // A, AAAA, MX, TXT, NS
-  sourceIP      String
-  responseIP    String?
-  status        QueryStatus @default(pending)
-  isSpoofed     Boolean     @default(false)
-  timestamp     DateTime    @default(now())
-  
-  responseTime  Int?        // milliseconds
-  
-  @@index([simulationId])
-  @@index([timestamp])
-  @@index([status])
-  @@map("dns_queries")
-}
+model DnsQuery {
+  id       String   @id @default(cuid())
+  ts       DateTime @default(now())
+  name     String
+  qtype    String   // A/AAAA/CNAME
+  resolver String   // LEGIT | SPOOF
+  answer   String?
+  ttl      Int?
+  rttMs    Int?
 
-// Timeline Event Model
-model TimelineEvent {
-  id            String     @id @default(uuid())
-  simulationId  String
-  simulation    Simulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
-  
-  timestamp     DateTime   @default(now())
-  type          String     // query, spoofed, blocked, resolved
-  description   String
-  severity      String     // info, warning, danger, success
-  details       Json?
-  
-  @@index([simulationId])
-  @@index([timestamp])
-  @@map("timeline_events")
-}
+  finalAnswer String?
+  finalAction String? // PASS | BLOCK | FORCE_SAFE_IP
 
-// Mitigation Configuration Model
-model MitigationConfig {
-  id                    String   @id @default(uuid())
-  
-  // DNSSEC
-  dnssecEnabled         Boolean  @default(true)
-  
-  // Firewall
-  firewallEnabled       Boolean  @default(true)
-  
-  // Rate Limiting
-  ratelimitingEnabled   Boolean  @default(true)
-  maxQueriesPerSecond   Int      @default(100)
-  
-  // IP Lists
-  ipWhitelist           String[] @default([])
-  ipBlacklist           String[] @default([])
-  
-  // Trusted Resolvers
-  trustedResolvers      String[] @default(["8.8.8.8", "1.1.1.1"])
-  
-  updatedAt             DateTime @updatedAt
-  
-  @@map("mitigation_config")
-}
+  sessionId String
+  session   LabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-// Security Metrics Model
-model SecurityMetrics {
-  id                  String   @id @default(uuid())
-  
-  timestamp           DateTime @default(now())
-  
-  threatsDetected     Int      @default(0)
-  threatsBlocked      Int      @default(0)
-  dnssecValidations   Int      @default(0)
-  avgResponseTime     Float    @default(0) // milliseconds
-  uptime              Float    @default(100) // percentage
-  
-  // Additional metrics
-  totalQueries        Int      @default(0)
-  maliciousQueries    Int      @default(0)
-  legitimateQueries   Int      @default(0)
-  
-  @@index([timestamp])
-  @@map("security_metrics")
-}
-
-// Attack Statistics Model (for analytics)
-model AttackStatistics {
-  id        String     @id @default(uuid())
-  date      DateTime   @unique
-  
-  total     Int        @default(0)
-  blocked   Int        @default(0)
-  successful Int       @default(0)
-  
-  // Attack types breakdown
-  cachePoisoning  Int  @default(0)
-  manInTheMiddle  Int  @default(0)
-  dnsHijack       Int  @default(0)
-  rogueServer     Int  @default(0)
-  
-  createdAt DateTime   @default(now())
-  
-  @@index([date])
-  @@map("attack_statistics")
+  @@index([sessionId, ts])
 }

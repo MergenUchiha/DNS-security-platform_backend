@@ -1,0 +1,78 @@
+services:
+  coredns_legit:
+    image: coredns/coredns:1.11.1
+    container_name: dns_lab_coredns_legit
+    command: -conf /etc/coredns/Corefile
+    volumes:
+      - ./coredns/legit/Corefile:/etc/coredns/Corefile:ro
+      - ./coredns/legit/zones:/zones:ro
+    ports:
+      - '1053:53/udp'
+      - '1053:53/tcp'
+
+  coredns_spoof:
+    image: coredns/coredns:1.11.1
+    container_name: dns_lab_coredns_spoof
+    command: -conf /etc/coredns/Corefile
+    volumes:
+      - ./coredns/spoof/Corefile:/etc/coredns/Corefile:ro
+      - ./coredns/spoof/zones:/zones:ro
+    ports:
+      - '2053:53/udp'
+      - '2053:53/tcp'
+
+  legit_site:
+    image: nginx:1.25-alpine
+    container_name: dns_lab_legit_site
+    volumes:
+      - ./sites/legit:/usr/share/nginx/html:ro
+    ports:
+      - '8081:80'
+
+  fake_site:
+    image: nginx:1.25-alpine
+    container_name: dns_lab_fake_site
+    volumes:
+      - ./sites/fake:/usr/share/nginx/html:ro
+    ports:
+      - '8082:80'
+
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: dns_lab_api
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+
+      # ВАЖНО: это строка для подключения к БД на ХОСТЕ
+      # Docker Desktop (Windows/Mac): host.docker.internal обычно работает из коробки
+      DATABASE_URL: postgresql://postgres:Uchiha_11@host.docker.internal:5432/dns_lab-db?schema=public
+
+      DNS_LEGIT_HOST: coredns_legit
+      DNS_LEGIT_PORT: 53
+      DNS_SPOOF_HOST: coredns_spoof
+      DNS_SPOOF_PORT: 53
+
+      LEGIT_IP: 172.20.0.11
+      FAKE_IP: 172.20.0.12
+    ports:
+      - '3000:3000'
+    depends_on:
+      - coredns_legit
+      - coredns_spoof
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  # frontend:
+  #   build:
+  #     context: ../../frontend
+  #     dockerfile: Dockerfile
+  #   container_name: dns_lab_frontend
+  #   environment:
+  #     VITE_API_URL: http://localhost:3000
+  #   ports:
+  #     - '5173:80'
+  #   depends_on:
+  #     - api

@@ -1,223 +1,98 @@
-# DNS Security Platform - Backend
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
 
-Backend API для симуляции и защиты от DNS Spoofing атак.
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
 
-## 🛠️ Технологии
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-- **NestJS** - Node.js framework
-- **Prisma ORM** - Database ORM
-- **PostgreSQL** - База данных
-- **WebSocket** - Real-time обновления
-- **Zod** - Валидация данных
-- **Swagger** - API документация
+## Description
 
-## 📦 Установка
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-### 1. Установите PostgreSQL
-
-Скачайте и установите PostgreSQL с официального сайта: https://www.postgresql.org/download/
-
-### 2. Создайте базу данных
-
-```bash
-# Войдите в PostgreSQL
-psql -U postgres
-
-# Создайте базу данных
-CREATE DATABASE dns_security;
-
-# Выйдите
-\q
-```
-
-### 3. Установите зависимости
+## Project setup
 
 ```bash
-cd backend
-npm install
+$ npm install
 ```
 
-### 4. Настройте .env файл
-
-Создайте файл `.env` в корне папки backend:
-
-```env
-DATABASE_URL="postgresql://postgres:ваш_пароль@localhost:5432/dns_security?schema=public"
-PORT=3000
-NODE_ENV=development
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
-JWT_EXPIRES_IN=24h
-FRONTEND_URL=http://localhost:5173
-INGEST_API_KEY=dns-security-api-key-change-in-production
-```
-
-**ВАЖНО:** Замените `ваш_пароль` на пароль вашего PostgreSQL пользователя!
-
-### 5. Запустите миграции базы данных
+## Compile and run the project
 
 ```bash
-# Сгенерируйте Prisma Client
-npm run prisma:generate
+# development
+$ npm run start
 
-# Создайте таблицы в БД
-npm run prisma:migrate
+# watch mode
+$ npm run start:dev
 
-# Заполните БД тестовыми данными
-npm run prisma:seed
+# production mode
+$ npm run start:prod
 ```
 
-### 6. Запустите сервер
+## Run tests
 
 ```bash
-# Development режим (с hot-reload)
-npm run start:dev
+# unit tests
+$ npm run test
 
-# Production режим
-npm run build
-npm run start:prod
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
 ```
 
-Сервер запустится на `http://localhost:3000`
+## Deployment
 
-## 📚 API Endpoints
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
 
-После запуска откройте Swagger документацию: **http://localhost:3000/api/docs**
-
-### Simulation (Симуляция атак)
-
-- `POST /api/simulation/start` - Запустить симуляцию
-- `POST /api/simulation/:id/stop` - Остановить симуляцию
-- `GET /api/simulation/:id` - Получить детали симуляции
-- `GET /api/simulation` - Список всех симуляций
-
-### Mitigation (Защита)
-
-- `GET /api/mitigation/config` - Получить конфигурацию защиты
-- `PUT /api/mitigation/config` - Обновить конфигурацию
-- `GET /api/mitigation/metrics` - Получить метрики безопасности
-
-### Analytics (Аналитика)
-
-- `GET /api/analytics/statistics?days=7` - Статистика атак
-- `GET /api/analytics/export?format=csv` - Экспорт отчета
-
-## 🔌 WebSocket Events
-
-WebSocket подключение: `ws://localhost:3000`
-
-**События от сервера:**
-- `connected` - Подтверждение подключения
-- `simulationUpdate` - Обновление симуляции
-- `dnsQuery` - Новый DNS запрос
-- `metricsUpdate` - Обновление метрик
-- `attackEvent` - Событие атаки
-
-**События на сервер:**
-- `ping` - Проверка соединения (ответ: `pong`)
-
-## 🧪 Тестирование API
-
-### Запуск симуляции (пример)
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
 ```bash
-curl -X POST http://localhost:3000/api/simulation/start \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "dns_cache_poisoning",
-    "targetDomain": "example.com",
-    "spoofedIP": "192.168.1.100",
-    "intensity": "medium",
-    "duration": 60
-  }'
+$ npm install -g @nestjs/mau
+$ mau deploy
 ```
 
-### Получение конфигурации защиты
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
-```bash
-curl http://localhost:3000/api/mitigation/config
-```
+## Resources
 
-## 🗄️ Prisma Studio
+Check out a few resources that may come in handy when working with NestJS:
 
-Для визуального управления базой данных:
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
 
-```bash
-npm run prisma:studio
-```
+## Support
 
-Откроется браузер на `http://localhost:5555`
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
 
-## 📝 Полезные команды
+## Stay in touch
 
-```bash
-# Форматирование кода
-npm run format
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
 
-# Линтинг
-npm run lint
+## License
 
-# Пересоздать БД (удалит все данные!)
-npm run prisma:migrate -- --reset
-
-# Заново заполнить тестовыми данными
-npm run prisma:seed
-```
-
-## ⚠️ Troubleshooting
-
-### Ошибка подключения к PostgreSQL
-
-```
-Error: P1001: Can't reach database server
-```
-
-**Решение:**
-1. Проверьте, что PostgreSQL запущен
-2. Проверьте правильность пароля в `.env`
-3. Убедитесь, что база данных `dns_security` создана
-
-### Ошибка при миграции
-
-```
-Error: Migration failed
-```
-
-**Решение:**
-```bash
-# Пересоздайте БД
-npm run prisma:migrate -- --reset
-
-# Заново запустите миграции
-npm run prisma:migrate
-```
-
-### Port уже занят
-
-```
-Error: listen EADDRINUSE: address already in use :::3000
-```
-
-**Решение:**
-1. Измените порт в `.env` (например, на 3001)
-2. Или остановите процесс на порту 3000
-
-## 🚀 Production
-
-Для production деплоя:
-
-1. Измените `NODE_ENV=production` в `.env`
-2. Сгенерируйте сильный `JWT_SECRET`
-3. Настройте правильный `DATABASE_URL`
-4. Запустите:
-
-```bash
-npm run build
-npm run start:prod
-```
-
-## 📧 Поддержка
-
-Если возникли проблемы:
-1. Проверьте логи сервера
-2. Откройте Swagger документацию
-3. Проверьте подключение к БД через Prisma Studio
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
