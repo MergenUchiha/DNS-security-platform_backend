@@ -45,18 +45,16 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3000
-
-      # ВАЖНО: это строка для подключения к БД на ХОСТЕ
-      # Docker Desktop (Windows/Mac): host.docker.internal обычно работает из коробки
+      # Docker Desktop (Windows/Mac): host.docker.internal работает из коробки
       DATABASE_URL: postgresql://postgres:Uchiha_11@host.docker.internal:5432/dns_lab-db?schema=public
-
       DNS_LEGIT_HOST: coredns_legit
       DNS_LEGIT_PORT: 53
       DNS_SPOOF_HOST: coredns_spoof
       DNS_SPOOF_PORT: 53
-
       LEGIT_IP: 172.20.0.11
       FAKE_IP: 172.20.0.12
+      LEGIT_SITE_URL: http://localhost:8081
+      FAKE_SITE_URL: http://localhost:8082
     ports:
       - '3000:3000'
     depends_on:
@@ -65,14 +63,12 @@ services:
     extra_hosts:
       - 'host.docker.internal:host-gateway'
 
-  # frontend:
-  #   build:
-  #     context: ../../frontend
-  #     dockerfile: Dockerfile
-  #   container_name: dns_lab_frontend
-  #   environment:
-  #     VITE_API_URL: http://localhost:3000
-  #   ports:
-  #     - '5173:80'
-  #   depends_on:
-  #     - api
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    container_name: dns_lab_frontend
+    ports:
+      - '5173:80'
+    depends_on:
+      - api

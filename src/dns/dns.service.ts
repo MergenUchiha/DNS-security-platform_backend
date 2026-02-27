@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LabMode, EventType } from '@prisma/client';
 import { UDPClient, Packet } from 'dns2';
@@ -11,13 +11,13 @@ type FinalAction = 'PASS' | 'BLOCK' | 'FORCE_SAFE_IP';
 
 @Injectable()
 export class DnsService {
+  private readonly logger = new Logger(DnsService.name);
+
   private legitHost: string;
   private legitPort: number;
   private spoofHost: string;
   private spoofPort: number;
-
   private legitIp: string;
-
   private fakeIp: string;
   private legitSiteUrl: string;
   private fakeSiteUrl: string;
@@ -32,9 +32,7 @@ export class DnsService {
     this.legitPort = Number(this.config.get<string>('DNS_LEGIT_PORT', '1053'));
     this.spoofHost = this.config.get<string>('DNS_SPOOF_HOST', 'localhost');
     this.spoofPort = Number(this.config.get<string>('DNS_SPOOF_PORT', '2053'));
-
     this.legitIp = this.config.get<string>('LEGIT_IP', '172.20.0.11');
-
     this.fakeIp = this.config.get<string>('FAKE_IP', '172.20.0.12');
     this.legitSiteUrl = this.config.get<string>(
       'LEGIT_SITE_URL',
@@ -44,23 +42,32 @@ export class DnsService {
       'FAKE_SITE_URL',
       'http://localhost:8082',
     );
+
+    this.logger.log(
+      `DNS resolvers — legit: ${this.legitHost}:${this.legitPort} | spoof: ${this.spoofHost}:${this.spoofPort}`,
+    );
   }
 
   private pickResolver(mode: LabMode): ResolverChoice {
     if (mode === LabMode.SAFE) return 'LEGIT';
-    // ATTACK and MITIGATED intentionally query SPOOF (to prove mitigation works)
+    // ATTACK и MITIGATED намеренно используют SPOOF — чтобы доказать что митигация работает
     return 'SPOOF';
   }
 
+  // ─── КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ────────────────────────────────────────────────────
+  // dns2 UDPClient: поле `dns` = ТОЛЬКО hostname/IP, БЕЗ порта.
+  // Порт передаётся ОТДЕЛЬНЫМ числовым полем `port`.
+  // Формат "coredns_legit:53" НЕ работает — вызывает таймаут/ошибку.
+  // ────────────────────────────────────────────────────────────────────────────
   private client(choice: ResolverChoice) {
-    const dns = UDPClient({
-      dns:
-        choice === 'LEGIT'
-          ? `${this.legitHost}:${this.legitPort}`
-          : `${this.spoofHost}:${this.spoofPort}`,
-      timeout: 2000,
+    const host = choice === 'LEGIT' ? this.legitHost : this.spoofHost;
+    const port = choice === 'LEGIT' ? this.legitPort : this.spoofPort;
+
+    return UDPClient({
+      dns: host, // ← ТОЛЬКО hostname: "coredns_legit" или "localhost"
+      port, // ← порт отдельно: 53 / 1053 / 2053
+      timeout: 3000,
     });
-    return dns;
   }
 
   private qtype(type: 'A' | 'AAAA' | 'CNAME') {
@@ -76,7 +83,6 @@ export class DnsService {
     if (!session || session.endedAt)
       throw new BadRequestException('Invalid or ended session');
 
-    // Safety net: если policy вдруг удалили, восстановим дефолт для bank.lab (не обязательно, но удобно)
     await this.ensureDefaultPolicy(sessionId);
 
     const resolverChoice = this.pickResolver(session.mode);
@@ -89,8 +95,16 @@ export class DnsService {
     });
 
     const start = Date.now();
+    const targetAddr =
+      resolverChoice === 'LEGIT'
+        ? `${this.legitHost}:${this.legitPort}`
+        : `${this.spoofHost}:${this.spoofPort}`;
 
     try {
+      this.logger.log(
+        `[${session.mode}] resolve "${name}" (${type}) → ${resolverChoice} @ ${targetAddr}`,
+      );
+
       const res = await dns(name, this.qtype(type));
       const rttMs = Date.now() - start;
 
@@ -105,12 +119,23 @@ export class DnsService {
         ttl = typeof ans.ttl === 'number' ? ans.ttl : null;
       }
 
+      this.logger.log(
+        `[${session.mode}] "${name}" → ${rawAnswer ?? 'NXDOMAIN'} (rtt=${rttMs}ms)`,
+      );
+
       const mitigationResult = await this.applyMitigationIfNeeded(
         sessionId,
         session.mode,
         name,
         rawAnswer,
       );
+
+      if (mitigationResult.finalAction !== 'PASS') {
+        this.logger.warn(
+          `[MITIGATION] ${mitigationResult.finalAction} for "${name}" ` +
+            `(raw=${rawAnswer} → final=${mitigationResult.finalAnswer ?? 'blocked'})`,
+        );
+      }
 
       await this.prisma.dnsQuery.create({
         data: {
@@ -152,11 +177,15 @@ export class DnsService {
         alert: mitigationResult.alert ?? null,
       };
     } catch (e: any) {
+      const msg = e?.message ?? String(e);
+      this.logger.error(`DNS FAILED: "${name}" @ ${targetAddr} — ${msg}`);
       await this.events.log(sessionId, EventType.ERROR, 'ALERT', {
         where: 'dns.resolve',
-        message: e?.message ?? String(e),
+        resolver: resolverChoice,
+        target: targetAddr,
+        message: msg,
       });
-      throw new BadRequestException('DNS resolve failed');
+      throw new BadRequestException(`DNS resolve failed: ${msg}`);
     }
   }
 
@@ -181,7 +210,6 @@ export class DnsService {
     }
 
     const finalIp = res.finalAnswer;
-
     let targetUrl: string | null = null;
     if (finalIp === this.legitIp) targetUrl = this.legitSiteUrl;
     else if (finalIp === this.fakeIp) targetUrl = this.fakeSiteUrl;
@@ -219,7 +247,6 @@ export class DnsService {
     alert?: any;
   }> {
     if (mode !== LabMode.MITIGATED) {
-      // ATTACK: хотим показать успешный spoof
       return { finalAction: 'PASS', finalAnswer: resolvedIp };
     }
 
@@ -230,7 +257,6 @@ export class DnsService {
 
     const allowed = policy.allowedIps ?? [];
     const ok = resolvedIp ? allowed.includes(resolvedIp) : false;
-
     if (ok) return { finalAction: 'PASS', finalAnswer: resolvedIp };
 
     await this.events.log(sessionId, EventType.SPOOF_DETECTED, 'ALERT', {
@@ -296,7 +322,6 @@ export class DnsService {
         action: defaultAction,
         allowedIps: [this.legitIp],
         auto: true,
-        reason: 'ensureDefaultPolicy',
       },
     );
   }
