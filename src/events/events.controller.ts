@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { ListEventsDto } from './dto/list-events.dto';
 
 @ApiTags('events')
 @Controller('events')
@@ -9,11 +9,11 @@ export class EventsController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  list(@Query('sessionId') sessionId: string, @Query() pag: PaginationDto) {
+  list(@Query() query: ListEventsDto) {
     return this.prisma.event.findMany({
-      where: { sessionId },
+      where: { sessionId: query.sessionId },
       orderBy: { ts: 'desc' },
-      take: pag.take ?? 100,
+      take: query.take ?? 100,
     });
   }
 }

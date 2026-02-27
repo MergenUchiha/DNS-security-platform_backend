@@ -119,6 +119,17 @@ export class DnsService {
         ttl = typeof ans.ttl === 'number' ? ans.ttl : null;
       }
 
+      // ─── FALLBACK for .lab domains ───────────────────────────────────
+      // When CoreDNS doesn't return a record (not running / misconfigured),
+      // use built-in IP mapping so the demo scenario works reliably.
+      if (!rawAnswer && name.endsWith('.lab')) {
+        rawAnswer = resolverChoice === 'LEGIT' ? this.legitIp : this.fakeIp;
+        ttl = 60;
+        this.logger.warn(
+          `[FALLBACK] DNS returned no answer for "${name}" — using built-in IP: ${rawAnswer}`,
+        );
+      }
+
       this.logger.log(
         `[${session.mode}] "${name}" → ${rawAnswer ?? 'NXDOMAIN'} (rtt=${rttMs}ms)`,
       );
