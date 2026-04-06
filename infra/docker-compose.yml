@@ -46,7 +46,7 @@ services:
       NODE_ENV: development
       PORT: 3000
       # Docker Desktop (Windows/Mac): host.docker.internal работает из коробки
-      DATABASE_URL: postgresql://postgres:Uchiha_11@host.docker.internal:5432/dns_lab-db?schema=public
+      DATABASE_URL: postgresql://postgres:Uchiha_11@host.docker.internal:5432/dns_lab_db?schema=public
       DNS_LEGIT_HOST: coredns_legit
       DNS_LEGIT_PORT: 53
       DNS_SPOOF_HOST: coredns_spoof
