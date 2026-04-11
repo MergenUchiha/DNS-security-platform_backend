@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { EventType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
 import { UpsertPolicyDto } from './dto/upsert-policy.dto';
@@ -36,7 +37,7 @@ export class MitigationService {
           },
         });
 
-    await this.events.log(sessionId, 'MITIGATION_POLICY_UPSERTED', 'INFO', {
+    await this.events.log(sessionId, EventType.MITIGATION_POLICY_UPSERTED, 'INFO', {
       domain: dto.domain,
       action: dto.action,
       allowedIps: dto.allowedIps,

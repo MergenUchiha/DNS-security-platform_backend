@@ -3,6 +3,7 @@
 // Не требует ts-node, работает на любом Node.js >= 18
 
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
 
@@ -65,7 +66,18 @@ async function main() {
   await prisma.event.deleteMany();
   await prisma.mitigationPolicy.deleteMany();
   await prisma.labSession.deleteMany();
+  await prisma.user.deleteMany();
   console.log('    ✓ Готово\n');
+
+  // ════════════════════════════════════════════════════════════════════
+  // DEFAULT USER
+  // ════════════════════════════════════════════════════════════════════
+  console.log('👤  Создание пользователя по умолчанию...');
+  const passwordHash = await bcrypt.hash('admin123', 10);
+  const user = await prisma.user.create({
+    data: { username: 'admin', passwordHash },
+  });
+  console.log(`    ✓ Пользователь: admin / admin123  (id: ${user.id})\n`);
 
   // ════════════════════════════════════════════════════════════════════
   // СЕССИЯ 1 — завершённая (2 часа назад, полный цикл SAFE→ATTACK→MITIGATED)

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MitigationController } from './mitigation.controller';
 import { MitigationService } from './mitigation.service';
-import { EventsModule } from 'src/events/events.module';
+import { EventsModule } from '../events/events.module';
 
 @Module({
   imports: [EventsModule],

@@ -23,12 +23,8 @@ async function bootstrap() {
     .setTitle('DNS Lab API')
     .setDescription('DNS Spoofing Attack Simulation and Mitigation')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
-
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  });
 
   const doc = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('/docs', app, doc);

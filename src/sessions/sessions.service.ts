@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { LabMode } from '@prisma/client';
+import { EventType, LabMode } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
 import { CreateSessionDto } from './dto/create-session.dto';
@@ -27,7 +27,7 @@ export class SessionsService {
       data: { mode: LabMode.SAFE },
     });
 
-    await this.events.log(session.id, 'SESSION_STARTED', 'INFO', {
+    await this.events.log(session.id, EventType.SESSION_STARTED, 'INFO', {
       note: dto.note ?? null,
     });
 
@@ -51,7 +51,7 @@ export class SessionsService {
       },
     });
 
-    await this.events.log(session.id, 'MITIGATION_POLICY_UPSERTED', 'INFO', {
+    await this.events.log(session.id, EventType.MITIGATION_POLICY_UPSERTED, 'INFO', {
       domain: defaultDomain,
       action: defaultAction,
       allowedIps: [legitIp],
@@ -87,7 +87,7 @@ export class SessionsService {
       data: { endedAt: new Date() },
     });
 
-    await this.events.log(sessionId, 'SESSION_ENDED', 'INFO');
+    await this.events.log(sessionId, EventType.SESSION_ENDED, 'INFO');
     return ended;
   }
 }

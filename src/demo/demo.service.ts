@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { LabMode } from '@prisma/client';
+import { EventType, LabMode } from '@prisma/client';
 import { SessionsService } from '../sessions/sessions.service';
 import { LabService } from '../lab/lab.service';
 import { DnsService } from '../dns/dns.service';
@@ -36,7 +36,7 @@ export class DemoService {
     await this.lab.setMode(sessionId, LabMode.MITIGATED);
     const mitigated = await this.dns.resolve(sessionId, demoDomain, type);
 
-    await this.events.log(sessionId, 'MODE_CHANGED', 'INFO', {
+    await this.events.log(sessionId, EventType.MODE_CHANGED, 'INFO', {
       finishedDemo: true,
     });
 
@@ -45,9 +45,9 @@ export class DemoService {
       domain: demoDomain,
       steps: { safe, attack, mitigated },
       hint: {
-        legitSite: 'http://localhost:8081',
-        fakeSite: 'http://localhost:8082',
-        docs: 'http://localhost:3000/docs',
+        legitSite: this.config.get<string>('LEGIT_SITE_URL', 'http://localhost:8081'),
+        fakeSite: this.config.get<string>('FAKE_SITE_URL', 'http://localhost:8082'),
+        docs: `http://localhost:${this.config.get<string>('PORT', '3000')}/docs`,
       },
     };
   }

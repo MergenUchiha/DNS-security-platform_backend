@@ -1,15 +1,15 @@
-FROM node:18-bullseye-slim AS deps
+FROM oven/bun:1 AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json bun.lock* ./
+RUN bun install
 
-FROM node:18-bullseye-slim AS build
+FROM oven/bun:1 AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY prisma ./prisma
 COPY . .
-RUN npx prisma generate
-RUN npm run build
+RUN bunx prisma generate
+RUN bun run build
 
 FROM node:18-bullseye-slim AS runner
 WORKDIR /app

@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common';
 import { DnsController } from './dns.controller';
 import { DnsService } from './dns.service';
-import { EventsModule } from 'src/events/events.module';
-import { MitigationModule } from 'src/mitigation/mitigation.module';
-import { ConfigModule } from '@nestjs/config';
+import { EventsModule } from '../events/events.module';
+import { MitigationModule } from '../mitigation/mitigation.module';
 
 @Module({
-  imports: [EventsModule, MitigationModule, ConfigModule],
+  imports: [EventsModule, MitigationModule],
   controllers: [DnsController],
   providers: [DnsService],
   exports: [DnsService],
